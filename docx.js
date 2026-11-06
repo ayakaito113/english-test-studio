@@ -2,13 +2,14 @@
  * Standalone OOXML .docx writer. No external packages, CDN or data transfer.
  * ZIP entries are stored (uncompressed) for maximal browser compatibility.
  */
+import {parseInstruction, formatQuestionText} from './formatting.js';
 const encoder = new TextEncoder();
 const xml = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;');
 const byType = (questions) => {
   const map = new Map();
   questions.forEach(q => {
     const type = q.type || 'その他';
-    if (!map.has(type)) map.set(type, {type, instruction:q.instruction || '', items:[]});
+    if (!map.has(type)) map.set(type, {type, instruction:parseInstruction(q.instruction).heading, items:[]});
     map.get(type).items.push(q);
   });
   return [...map.values()];
@@ -36,8 +37,9 @@ function contentXml({questions,title='英語 確認テスト',documentType='ques
   groups.forEach((group,gi)=>{
     parts.push(paragraph(run(`【${gi+1}】 `,{bold:true,size:22})+run(group.instruction || `次の問題に答えなさい。`, {bold:true,size:18}),{before:180,after:185,keepNext:true}));
     group.items.forEach((q,qi)=>{
-      const condition=(q.instruction && q.instruction!==group.instruction) ? `（個別の指示：${q.instruction}）\n`:'';
-      const text = documentType==='questions' ? q.text : (String(q.answer||'').trim()?q.answer:'［解答未登録］');
+      const heading=parseInstruction(q.instruction).heading;
+      const condition=(heading && heading!==group.instruction) ? `（個別の指示：${heading}）\n`:'';
+      const text = documentType==='questions' ? formatQuestionText(q) : (String(q.answer||'').trim()?q.answer:'［解答未登録］');
       parts.push(paragraph(run(`(${qi+1})`,{size:20})+run(`  ${condition}${text}`,{serif:true,size:22}),{left:170,after:90,keepNext:documentType==='questions'&&!!choice(q)}));
       if(documentType==='questions'){
         if(choice(q)) parts.push(plain(`　　${choice(q)}`,{serif:true,size:19,left:370,after:80}));

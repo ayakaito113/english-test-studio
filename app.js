@@ -1,4 +1,5 @@
 import {downloadDocx} from './docx.js';
+import {parseInstruction, formatQuestionText} from './formatting.js';
 
 const $ = id => document.getElementById(id);
 const esc = str => String(str??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
@@ -17,7 +18,7 @@ const getDraft=()=>transaction('settings','readonly',s=>s.get('draft'));
 const saveDraft=()=>transaction('settings','readwrite',s=>s.put({key:'draft',value:{title:state.title,paper:state.paper,space:state.space,explain:state.explain,selectedIds:state.selectedIds}}));
 const putQuestions=arr=>transaction('questions','readwrite',s=>{for(const q of arr)s.put(q);});
 const selected=()=>state.selectedIds.map(id=>state.questions.find(q=>q.id===id)).filter(Boolean);
-const groups=()=>{const map=new Map();for(const q of selected()){const type=q.type||'その他';if(!map.has(type))map.set(type,{type,instruction:q.instruction||'',items:[]});map.get(type).items.push(q);}return [...map.values()];};
+const groups=()=>{const map=new Map();for(const q of selected()){const type=q.type||'その他';if(!map.has(type))map.set(type,{type,instruction:parseInstruction(q.instruction).heading,items:[]});map.get(type).items.push(q);}return [...map.values()];};
 function normalize(raw,i=0){
  const q={id:String(raw.id||'').trim()||idGen(),topic:String(raw.topic||raw.文法||'未分類').trim(),level:String(raw.level||raw.難易度||'標準').trim(),type:String(raw.type||raw.問題形式||'その他').trim(),instruction:String(raw.instruction||'').trim(),text:String(raw.text||'').trim(),choices:String(raw.choices||'').trim(),answer:String(raw.answer||'').trim(),explanation:String(raw.explanation||'').trim(),source:String(raw.source||'').trim(),answerSource:String(raw.answerSource||'').trim(),notes:String(raw.notes||'').trim()};
  if(!q.text)throw new Error(`${i+1}番目の問題に本文がありません。`);return q;
@@ -51,9 +52,10 @@ function renderPreview(){
  groups().forEach((g,i)=>{
    html+=`<section class="paper-group"><div class="paper-group-header"><strong>【${i+1}】</strong><span>${asPageText(g.instruction||'次の問題に答えなさい。')}</span></div>`;
    g.items.forEach((q,j)=>{
-     const specific=q.instruction!==g.instruction&&q.instruction?`<div class="paper-specific">個別の指示：${asPageText(q.instruction)}</div>`:'';
+     const heading=parseInstruction(q.instruction).heading;
+      const specific=heading && heading!==g.instruction ? `<div class="paper-specific">個別の指示：${asPageText(heading)}</div>` : '';
      if(!answerMode){
-       html+=`<div class="paper-question"><div class="paper-qnum">(${j+1})</div><div>${specific}<div class="paper-text">${asPageText(q.text)}</div>${q.choices&&!q.text.includes(q.choices)?`<div class="paper-choices">${asPageText(q.choices)}</div>`:''}${q.type.includes('選択')?'<div class="answer-space compact" style="border:none;text-align:right">答え（　　）</div>':`<div class="answer-space ${esc(state.space)}"></div>`}</div></div>`;
+       html+=`<div class="paper-question"><div class="paper-qnum">(${j+1})</div><div>${specific}<div class="paper-text">${asPageText(formatQuestionText(q))}</div>${q.choices&&!q.text.includes(q.choices)?`<div class="paper-choices">${asPageText(q.choices)}</div>`:''}${q.type.includes('選択')?'<div class="answer-space compact" style="border:none;text-align:right">答え（　　）</div>':`<div class="answer-space ${esc(state.space)}"></div>`}</div></div>`;
      }else{
        html+=`<div class="paper-question answer-card"><div class="paper-qnum">(${j+1})</div><div><div class="paper-text answer-main">${asPageText(q.answer.trim()||'［解答未登録］')}</div>${state.explain&&q.explanation?`<div class="answer-explain">解説・訳：${asPageText(q.explanation)}</div>`:''}</div></div>`;
      }
