@@ -14,41 +14,59 @@
 #chooseView .filters{grid-template-columns:repeat(2,minmax(0,1fr))}
 #chooseView .filter-search{grid-column:1/-1}
 
-/* Everything interactive lives in the left column. */
-.compose-panel{
-  margin:15px 0 20px;
+/* Stage one: compact sticky selection bar; filters sit directly above the questions. */
+.selection-dock{
+  position:sticky;
+  top:0;
+  z-index:5;
+  margin:0 0 11px;
   background:#fff;
   border:1px solid var(--line);
-  border-radius:12px;
-  padding:16px 19px;
-  box-shadow:var(--shadow);
+  border-radius:10px;
+  padding:11px 14px;
+  box-shadow:0 6px 18px rgba(30,53,42,.09);
 }
-.compose-panel .builder-top{margin-bottom:12px}
-.compose-settings{
-  display:grid;
-  grid-template-columns:repeat(2,minmax(0,1fr));
-  gap:7px 13px;
+.selection-dock-top{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
 }
-.compose-settings .compose-title{grid-column:1/-1}
-.compose-panel .check-line{margin:11px 0 12px}
-.compose-panel .selection-details{margin:10px 0 12px}
-.compose-panel #goPreview{margin-top:11px}
-.compose-panel .stacked{margin-bottom:0}
-.compose-panel .selection-details{
-  border:1px solid #e2e8df;
-  border-radius:8px;
-  padding:0 11px 11px;
+.selection-status{display:flex;align-items:center;gap:9px;font-size:13px}
+.selection-dock #goPreview{flex-shrink:0;padding:9px 15px}
+.selection-dock #goPreview span{margin-left:6px}
+.selection-dock .selection-details{
+  border-top:1px solid #eef0eb;
+  margin-top:9px;
+  padding-top:3px;
+  max-height:35vh;
+  overflow:auto;
 }
-.compose-panel .selection-details summary{
-  font-size:12px;color:var(--forest);cursor:pointer;padding:10px 0;
-  display:flex;justify-content:space-between;gap:10px;
+.selection-dock .selection-details summary{
+  font-size:11px;
+  color:var(--forest);
+  cursor:pointer;
+  padding:5px 0;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
 }
-.compose-panel .selection-details summary:hover{color:var(--forest-d)}
-.compose-panel .selection-details[open] summary{border-bottom:1px solid #edf0e9}
-.compose-panel .selection-details .selected-list{max-height:230px;overflow-y:auto;margin-bottom:8px}
-.compose-panel .selection-details .selected-card{padding:10px 0}
-.compose-panel .selection-details .helper{margin-top:8px}
-
+.selection-dock .selection-details .selected-list{
+  max-height:24vh;
+  overflow:auto;
+  margin-bottom:9px;
+}
+.selection-dock .selection-details .selected-card{padding:8px 0}
+.selection-dock .selection-details .helper{margin:7px 0}
+#chooseView .results-meta{margin-top:10px}
+@media(max-width:980px){.selection-dock{top:0}}
+@media(max-width:480px){
+ .selection-dock{padding:10px}
+ .selection-dock-top{align-items:stretch;gap:7px}
+ .selection-status{flex-wrap:wrap}
+ .selection-dock #goPreview{padding:9px 10px;font-size:11px}
+}
 /* Right half IS the page preview: one large pane, no inner viewport/card. */
 .live-document-pane{
   min-width:0;
@@ -109,8 +127,6 @@
   .live-document-pane .live-paper{min-height:500px}
 }
 @media(max-width:450px){
-  .compose-settings{grid-template-columns:1fr}
-  .compose-settings .compose-title{grid-column:auto}
   .live-document-pane .live-paper{padding:23px 16px 35px}
   .live-document-caption{padding:11px 16px}
   .live-document-pane .paper-group-header span{font-size:11px}

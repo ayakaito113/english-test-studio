@@ -41,7 +41,7 @@ function actionClick(action,id){if(action==='more'){state.displayLimit+=60;refre
  if(action==='up'&&ix>0){const x=[...state.selectedIds];[x[ix-1],x[ix]]=[x[ix],x[ix-1]];setSelected(x);}
  if(action==='down'&&ix>=0&&ix<state.selectedIds.length-1){const x=[...state.selectedIds];[x[ix],x[ix+1]]=[x[ix+1],x[ix]];setSelected(x);}
  if(action==='edit')openEditor(id);if(action==='import')$('dataDialog').showModal();}
-function syncSettings(){for(const id of ['testTitle','testTitle2'])$(id).value=state.title;for(const id of ['paper','paper2'])$(id).value=state.paper;for(const id of ['space','space2']){$(id).value=state.space;$(id).disabled=state.answerArea==='none';}for(const id of ['answerArea','answerArea2'])$(id).value=state.answerArea;for(const id of ['explain','explain2'])$(id).checked=state.explain;}
+function syncSettings(){ $('testTitle2').value=state.title; $('paper2').value=state.paper; $('space2').value=state.space; $('space2').disabled=state.answerArea==='none'; $('answerArea2').value=state.answerArea; $('explain2').checked=state.explain; }
 function updateSetting(field,value){state[field]=value;syncSettings();renderLivePreview();void saveDraft();if(state.step==='preview')renderPreview();}
 function showStep(step){state.step=step;$('chooseView').classList.toggle('hidden',step!=='choose');$('previewView').classList.toggle('hidden',step!=='preview');document.querySelectorAll('.step').forEach(b=>b.classList.toggle('active',b.dataset.step===step));if(step==='preview')renderPreview();window.scrollTo(0,0);}
 const asPageText=(s)=>lines(s);
@@ -103,11 +103,11 @@ function bind(){
  document.addEventListener('click',ev=>{const t=ev.target.closest('[data-action]');if(!t)return;actionClick(t.dataset.action,t.dataset.id);});
  document.querySelectorAll('[data-step]').forEach(btn=>btn.addEventListener('click',()=>{if(btn.dataset.step==='preview'&&!selected().length){notice('先に問題を選んでください');return;}showStep(btn.dataset.step);}));
  $('clearSelection').addEventListener('click',()=>setSelected([]));$('goPreview').addEventListener('click',()=>showStep('preview'));$('backToChoose').addEventListener('click',()=>showStep('choose'));$('backToChoose2').addEventListener('click',()=>showStep('choose'));
- ['testTitle','testTitle2'].forEach(id=>$(id).addEventListener('input',ev=>updateSetting('title',ev.target.value||'英語 確認テスト')));
- ['paper','paper2'].forEach(id=>$(id).addEventListener('change',ev=>updateSetting('paper',ev.target.value)));
- ['space','space2'].forEach(id=>$(id).addEventListener('change',ev=>updateSetting('space',ev.target.value)));
-  ['answerArea','answerArea2'].forEach(id=>$(id).addEventListener('change',ev=>updateSetting('answerArea',ev.target.value)));
- ['explain','explain2'].forEach(id=>$(id).addEventListener('change',ev=>updateSetting('explain',ev.target.checked)));
+ $('testTitle2').addEventListener('input',ev=>updateSetting('title',ev.target.value||'英語 確認テスト'));
+ $('paper2').addEventListener('change',ev=>updateSetting('paper',ev.target.value));
+ $('space2').addEventListener('change',ev=>updateSetting('space',ev.target.value));
+  $('answerArea2').addEventListener('change',ev=>updateSetting('answerArea',ev.target.value));
+ $('explain2').addEventListener('change',ev=>updateSetting('explain',ev.target.checked));
  for(const btn of document.querySelectorAll('[data-document]'))btn.addEventListener('click',()=>{state.documentType=btn.dataset.document;renderPreview();});
  for(const [id,type] of [['wordQuestions','questions'],['wordAnswers','answers']])$(id).addEventListener('click',()=>{if(!selected().length)return notice('問題を選んでください');downloadDocx({...currentDraft(),questions:selected(),documentType:type});notice((type==='answers'?'解答':'問題')+'のWordファイルを生成しました');});
  for(const [id,type] of [['printQuestions','questions'],['printAnswers','answers']])$(id).addEventListener('click',()=>{state.documentType=type;renderPreview();window.print();});

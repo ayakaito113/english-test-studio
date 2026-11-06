@@ -13,39 +13,34 @@
 <body>
   <header class="topbar no-print">
     <div class="logo"><span class="logo-icon" aria-hidden="true">▣</span><div><div class="logo-name">英語テスト工房</div><div class="logo-caption">選んで、組み立てる。</div></div></div>
-    <nav class="steps" aria-label="作業の流れ"><button type="button" data-step="choose" class="step active"><span>1</span> 問題を選ぶ</button><span class="step-line"></span><button type="button" data-step="preview" class="step"><span>2</span> 紙面を確認</button></nav>
+    <nav class="steps" aria-label="作業の流れ"><button type="button" data-step="choose" class="step active"><span>1</span> 問題を選ぶ</button><span class="step-line"></span><button type="button" data-step="preview" class="step"><span>2</span> テスト設定・出力</button></nav>
     <button id="openData" class="privacy-chip" type="button" title="問題データの取り込み・バックアップ"><span class="privacy-dot"></span><span id="bankCountTop">問題データ 0問</span><span class="privacy-sub">この端末に保存</span></button>
   </header>
 
   <main>
     <section id="chooseView" class="screen">
-      <div class="hero"><div><div class="eyebrow">QUESTION STUDIO</div><h1>ほしい問題を、自由に選ぼう。</h1><p>文法・難易度・問題形式で探して、1問ずつテストに追加。検索条件を変えても選んだ問題は残ります。</p></div><div class="hero-meta" id="heroTopics">プライベートな問題バンク</div></div>
+      <div class="hero"><div><div class="eyebrow">QUESTION STUDIO</div><h1>ほしい問題を、自由に選ぼう。</h1><p>問題を選ぶたびに右側へ反映。出題する問題が決まったら「確定」を押して、テスト名や出力設定に進みます。</p></div><div class="hero-meta" id="heroTopics">プライベートな問題バンク</div></div>
       <div class="workspace">
         <section class="main-pane" aria-label="問題を探す">
           <div class="heading-line"><h2>問題を探す <span class="muted" id="visibleCount">0問</span></h2><div class="small-actions"><button type="button" id="newQuestion" class="text-button">＋ 問題を手入力</button><button type="button" id="importInline" class="text-button">データを読み込む</button></div></div>
+          <section class="selection-dock" aria-label="選択した問題の確認と確定">
+            <div class="selection-dock-top">
+              <div class="selection-status"><strong>選択中の問題</strong><span class="count-pill" id="selectedCount">0問</span></div>
+              <button id="goPreview" type="button" class="primary">出題する問題を確定 <span aria-hidden="true">→</span></button>
+            </div>
+            <details class="selection-details">
+              <summary>選択中の問題を並べ替え・取り外し <span aria-hidden="true">⌄</span></summary>
+              <p class="helper">出題順は上下の矢印で変更できます。同じ問題形式は同じ大問にまとめます。</p>
+              <div id="selectedList" class="selected-list"></div>
+              <button id="clearSelection" type="button" class="subtle-button">選択をすべて外す</button>
+            </details>
+          </section>
           <div class="filters">
             <label>文法項目<select id="topicFilter"><option value="">すべて</option></select></label>
             <label>難易度<select id="levelFilter"><option value="">すべて</option></select></label>
             <label>問題形式<select id="typeFilter"><option value="">すべて</option></select></label>
             <label class="filter-search">キーワード<input id="searchInput" type="search" placeholder="英文・日本文・出典で検索"></label>
           </div>
-          <section class="compose-panel" aria-label="テストの設定と選択した問題">
-            <div class="builder-top"><h2>今回のテスト</h2><span class="count-pill" id="selectedCount">0問</span></div>
-            <div class="compose-settings">
-              <label class="stacked compose-title">テスト名<input id="testTitle" maxlength="80" placeholder="英語 確認テスト" value="英語 確認テスト"></label>
-              <label>用紙<select id="paper"><option value="Letter">Letter</option><option value="A4">A4</option></select></label>
-              <label>問題用紙の表示<select id="answerArea"><option value="with">解答欄あり</option><option value="none">問題のみ（解答欄なし）</option></select></label>
-              <label>記述の解答スペース<select id="space"><option value="compact">少なめ</option><option value="standard" selected>標準</option><option value="wide">広め</option></select></label>
-            </div>
-            <label class="check-line"><input type="checkbox" id="explain">解答に原本の解説・訳も載せる</label>
-            <details class="selection-details">
-              <summary>選択中の問題を並べ替え・取り外し <span aria-hidden="true">⌄</span></summary>
-              <p class="helper">矢印で並べ替え。同じ形式の問題は同じ大問にまとめます。</p>
-              <div id="selectedList" class="selected-list"></div>
-              <button id="clearSelection" type="button" class="subtle-button">選択をすべて外す</button>
-            </details>
-            <button id="goPreview" type="button" class="primary full-width">大きな紙面で確認・出力 <span>→</span></button>
-          </section>
           <div class="results-meta"><span id="resultInfo">条件に合う問題を表示します</span><button id="resetFilters" class="subtle-button" type="button">条件をリセット</button></div>
           <div id="questionList" class="question-list" aria-live="polite"></div>
         </section>
@@ -57,7 +52,7 @@
     </section>
 
     <section id="previewView" class="screen hidden">
-      <div class="hero"><div><div class="eyebrow">QUESTION STUDIO</div><h1>選んだ問題を、紙面で確かめる。</h1><p>問題用紙と解答を切り替えて確認。Word形式でダウンロードして、あとから編集できます。</p></div><div class="hero-meta" id="previewTopics">問題と解答を別々に</div></div>
+      <div class="hero"><div><div class="eyebrow">QUESTION STUDIO</div><h1>出題する問題が決まったら、テストを仕上げよう。</h1><p>ここでテスト名・用紙・解答欄を設定し、問題用紙と解答を確認してWordやPDFで出力できます。問題はいつでも選び直せます。</p></div><div class="hero-meta" id="previewTopics">問題と解答を別々に</div></div>
       <div class="preview-layout">
         <section class="preview-main">
           <div class="preview-tools no-print"><div class="tabset"><button class="tab active" id="tabQuestions" data-document="questions" type="button">問題用紙</button><button class="tab" id="tabAnswers" data-document="answers" type="button">解答</button></div><div class="export-buttons"><button id="printQuestions" type="button" class="outline strong">問題を印刷 / PDF</button><button id="printAnswers" type="button" class="outline">解答を印刷 / PDF</button><button id="wordQuestions" type="button" class="outline strong">問題をWordでDL</button><button id="wordAnswers" type="button" class="outline">解答をWordでDL</button></div></div>
@@ -65,7 +60,7 @@
           <div class="paper-wrap"><article id="paperPreview" class="paper"></article></div>
           <div class="preview-bottom no-print"><button type="button" class="outline" id="backToChoose">← 問題選択へ戻る</button></div>
         </section>
-        <aside class="builder preview-side no-print"><div class="builder-top"><h2>今回のテスト</h2><span class="count-pill" id="selectedCount2">0問</span></div><label class="stacked">テスト名<input id="testTitle2" maxlength="80"></label><div class="two-cols"><label>用紙<select id="paper2"><option value="Letter">Letter</option><option value="A4">A4</option></select></label><label>問題用紙の表示<select id="answerArea2"><option value="with">解答欄あり</option><option value="none">問題のみ（解答欄なし）</option></select></label></div><label class="stacked">記述の解答スペース<select id="space2"><option value="compact">少なめ</option><option value="standard">標準</option><option value="wide">広め</option></select></label><label class="check-line"><input type="checkbox" id="explain2">解答に原本の解説・訳も載せる</label><div class="divider-line"></div><div class="selected-head"><strong>出題する問題</strong><span class="helper" id="previewTypeSummary"></span></div><div id="selectedListPreview" class="selected-list"></div><button type="button" id="backToChoose2" class="outline full-width">選び直す</button></aside>
+        <aside class="builder preview-side no-print"><div class="builder-top"><h2>テスト設定</h2><span class="count-pill" id="selectedCount2">0問</span></div><label class="stacked">テスト名<input id="testTitle2" maxlength="80"></label><div class="two-cols"><label>用紙<select id="paper2"><option value="Letter">Letter</option><option value="A4">A4</option></select></label><label>問題用紙の表示<select id="answerArea2"><option value="with">解答欄あり</option><option value="none">問題のみ（解答欄なし）</option></select></label></div><label class="stacked">記述の解答スペース<select id="space2"><option value="compact">少なめ</option><option value="standard">標準</option><option value="wide">広め</option></select></label><label class="check-line"><input type="checkbox" id="explain2">解答に原本の解説・訳も載せる</label><div class="divider-line"></div><div class="selected-head"><strong>出題する問題</strong><span class="helper" id="previewTypeSummary"></span></div><div id="selectedListPreview" class="selected-list"></div><button type="button" id="backToChoose2" class="outline full-width">選び直す</button></aside>
       </div>
     </section>
   </main>
