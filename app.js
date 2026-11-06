@@ -35,19 +35,19 @@ function refreshList(){const arr=filtered();$('visibleCount').textContent=`${arr
  const shown=arr.slice(0,state.displayLimit);$('questionList').innerHTML=shown.map(q=>{const added=state.selectedIds.includes(q.id);return `<article class="q-card" data-id="${esc(q.id)}"><div class="q-card-head"><div class="q-tags"><span class="tag">${esc(q.topic)}</span><span class="tag level">${esc(q.level)}</span><span class="tag type">${esc(q.type)}</span></div><span class="q-source">${q.answer?'解答あり':'解答待ち'}</span></div><div class="q-main">${lines(q.text)}</div>${q.choices?`<div class="q-choices">${lines(q.choices)}</div>`:''}<div class="q-actions"><span class="q-source-label" title="${esc(q.source)}">${esc(short(q.source,44))}</span><div class="q-actions-right"><button type="button" class="tiny-button" data-action="edit" data-id="${esc(q.id)}">修正</button><button type="button" data-action="toggle" data-id="${esc(q.id)}" class="primary add-button ${added?'chosen':''}">${added?'✓ 追加済み':'＋ 追加'}</button></div></div></article>`;}).join('')+(arr.length>shown.length?`<button type="button" class="outline full-width" data-action="more">さらに表示（${shown.length} / ${arr.length}問）</button>`:'');}
 function selectedMarkup(){const items=selected();if(!items.length)return '<div class="empty"><strong>まだ選ばれていません</strong><span>左側から問題を追加してください。</span></div>';return items.map((q,i)=>`<div class="selected-card"><span class="sel-n">${i+1}</span><div><div class="sel-tags">${esc(q.topic)} · ${esc(q.level)} / ${esc(q.type)}</div><div class="sel-title">${esc(short(q.text,94))}</div><div class="sel-order"><button type="button" class="icon-button" data-action="up" data-id="${esc(q.id)}" ${i===0?'disabled':''} aria-label="上へ移動">↑</button><button type="button" class="icon-button" data-action="down" data-id="${esc(q.id)}" ${i===items.length-1?'disabled':''} aria-label="下へ移動">↓</button></div></div><button class="sel-del" data-action="remove" data-id="${esc(q.id)}" type="button" title="取り外す" aria-label="取り外す">×</button></div>`).join('');}
 function renderSelection(){const html=selectedMarkup();$('selectedList').innerHTML=html;$('selectedListPreview').innerHTML=html;$('goPreview').disabled=!state.selectedIds.length;$('selectedCount').textContent=`${state.selectedIds.length}問`;$('selectedCount2').textContent=`${state.selectedIds.length}問`;}
-function setSelected(ids){state.selectedIds=unique(ids).filter(id=>state.questions.some(q=>q.id===id));refreshList();renderSelection();updateCounters();if(state.step==='preview')renderPreview();void saveDraft();}
+function setSelected(ids){const oldCount=state.selectedIds.length;state.selectedIds=unique(ids).filter(id=>state.questions.some(q=>q.id===id));refreshList();renderSelection();updateCounters();renderLivePreview(state.selectedIds.length>oldCount);if(state.step==='preview')renderPreview();void saveDraft();}
 function actionClick(action,id){if(action==='more'){state.displayLimit+=60;refreshList();return;}const ix=state.selectedIds.indexOf(id);if(action==='toggle'){if(ix<0)setSelected([...state.selectedIds,id]);else setSelected(state.selectedIds.filter(x=>x!==id));}
  if(action==='remove')setSelected(state.selectedIds.filter(x=>x!==id));
  if(action==='up'&&ix>0){const x=[...state.selectedIds];[x[ix-1],x[ix]]=[x[ix],x[ix-1]];setSelected(x);}
  if(action==='down'&&ix>=0&&ix<state.selectedIds.length-1){const x=[...state.selectedIds];[x[ix],x[ix+1]]=[x[ix+1],x[ix]];setSelected(x);}
  if(action==='edit')openEditor(id);if(action==='import')$('dataDialog').showModal();}
 function syncSettings(){for(const id of ['testTitle','testTitle2'])$(id).value=state.title;for(const id of ['paper','paper2'])$(id).value=state.paper;for(const id of ['space','space2']){$(id).value=state.space;$(id).disabled=state.answerArea==='none';}for(const id of ['answerArea','answerArea2'])$(id).value=state.answerArea;for(const id of ['explain','explain2'])$(id).checked=state.explain;}
-function updateSetting(field,value){state[field]=value;syncSettings();void saveDraft();if(state.step==='preview')renderPreview();}
+function updateSetting(field,value){state[field]=value;syncSettings();renderLivePreview();void saveDraft();if(state.step==='preview')renderPreview();}
 function showStep(step){state.step=step;$('chooseView').classList.toggle('hidden',step!=='choose');$('previewView').classList.toggle('hidden',step!=='preview');document.querySelectorAll('.step').forEach(b=>b.classList.toggle('active',b.dataset.step===step));if(step==='preview')renderPreview();window.scrollTo(0,0);}
 const asPageText=(s)=>lines(s);
-function renderPreview(){
- const qs=selected();const answerMode=state.documentType==='answers';$('tabQuestions').classList.toggle('active',!answerMode);$('tabAnswers').classList.toggle('active',answerMode);
- $('paperPreview').className=`paper ${state.paper.toLowerCase()}`;
+// Both paper views share the exact same question grouping and answer-area logic.
+function paperMarkup(answerMode=false){
+ const qs=selected();
  let html=`<div class="paper-head"><h2>${esc(state.title)}</h2><div class="paper-metadata">${answerMode?'<span>解答・解説</span>':'<span>日付：______________</span><span>氏名：____________________</span>'}</div></div>`;
  groups().forEach((g,i)=>{
    html+=`<section class="paper-group"><div class="paper-group-header"><strong>【${i+1}】</strong><span>${asPageText(g.instruction||'次の問題に答えなさい。')}</span></div>`;
@@ -62,10 +62,31 @@ function renderPreview(){
      }
    });html+='</section>';
  });
- if(!qs.length)html+='<div class="empty">出題する問題がありません。</div>';
- $('paperPreview').innerHTML=html;
+ if(!qs.length)html+='<div class="live-empty">左側の「＋ 追加」で問題を選ぶと、ここに完成形が表示されます。</div>';
+ return html;
+}
+function renderLivePreview(scrollToEnd=false){
+ const el=$('livePaper');
+ if(!el)return;
+ const viewport=el.parentElement;
+ const oldPosition=viewport.scrollTop;
+ el.className=`paper live-paper ${state.paper.toLowerCase()}`;
+ el.innerHTML=paperMarkup(false);
+ $('livePreviewMeta').textContent=`${selected().length}問 / ${groups().length}大問`;
+ // A new question is easiest to spot at the bottom; otherwise keep the reading position.
+ viewport.scrollTop=scrollToEnd?viewport.scrollHeight:Math.min(oldPosition,viewport.scrollHeight);
+}
+function renderPreview(){
+ const answerMode=state.documentType==='answers';
+ $('tabQuestions').classList.toggle('active',!answerMode);
+ $('tabAnswers').classList.toggle('active',answerMode);
+ $('paperPreview').className=`paper ${state.paper.toLowerCase()}`;
+ $('paperPreview').innerHTML=paperMarkup(answerMode);
  $('previewTypeSummary').textContent=`${groups().length}大問`;
- const printSize=document.getElementById('printSizeDynamic')||document.createElement('style');printSize.id='printSizeDynamic';printSize.textContent=`@media print{@page{size:${state.paper==='A4'?'A4':'letter'};margin:0.68in 0.65in}}`;document.head.appendChild(printSize);
+ const printSize=document.getElementById('printSizeDynamic')||document.createElement('style');
+ printSize.id='printSizeDynamic';
+ printSize.textContent=`@media print{@page{size:${state.paper==='A4'?'A4':'letter'};margin:0.68in 0.65in}}`;
+ document.head.appendChild(printSize);
 }
 async function importFile(file){try{const parsed=parseImport(await file.text());if(parsed.questions.length){await putQuestions(parsed.questions);state.questions=await getQuestions();refreshOptions();}
   if(parsed.draft){const d=parsed.draft;state.title=d.title||state.title;state.paper=d.paper==='A4'?'A4':'Letter';state.space=['compact','standard','wide'].includes(d.space)?d.space:'standard';state.answerArea=d.answerArea==='none'?'none':'with';state.explain=!!d.explain;state.selectedIds=unique(d.selectedIds||[]).filter(id=>state.questions.some(q=>q.id===id));syncSettings();await saveDraft();}
@@ -75,7 +96,7 @@ function saveJson(data,filename){const blob=new Blob([JSON.stringify(data,null,2
 const safeFileName = s => String(s||'test').replace(/[\\/:*?"<>|]/g,'_').replace(/\s+/g,'_').slice(0,40);
 function currentDraft(){return {title:state.title,paper:state.paper,space:state.space,answerArea:state.answerArea,explain:state.explain,selectedIds:state.selectedIds};}
 function openEditor(id){const form=$('questionForm');form.reset();const q=state.questions.find(q=>q.id===id);$('editorHeading').textContent=q?'問題を編集する':'問題を登録する';for(const field of ['id','topic','level','type','instruction','text','choices','answer','source','explanation']){const el=form.elements.namedItem(field);if(el)el.value=q?.[field]||'';}$('editDialog').showModal();}
-function refreshAll(){refreshOptions();refreshList();renderSelection();updateCounters();if(state.step==='preview')renderPreview();}
+function refreshAll(){refreshOptions();refreshList();renderSelection();updateCounters();renderLivePreview();if(state.step==='preview')renderPreview();}
 function bind(){
  ['topicFilter','levelFilter','typeFilter','searchInput'].forEach(id=>$(id).addEventListener('input',()=>{state.displayLimit=60;refreshList();}));
  $('resetFilters').addEventListener('click',()=>{for(const id of ['topicFilter','levelFilter','typeFilter','searchInput'])$(id).value='';state.displayLimit=60;refreshList();});
