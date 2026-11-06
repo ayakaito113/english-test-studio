@@ -1,0 +1,14 @@
+# このリポジトリには問題データ・元PDF・解答などを絶対に含めない
+*.pdf
+*.docx
+*.xlsx
+*.csv
+*問題*.json
+*解答*.json
+*backup*.json
+*バックアップ*.json
+private/
+questions/
+data/
+*.log
+.DS_Store
