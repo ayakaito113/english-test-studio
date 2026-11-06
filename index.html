@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>英語テスト工房 | Question Studio</title>
+  <meta name="description" content="文法・難易度・問題形式で問題を探し、テストを組み立てる。問題データはブラウザ内だけに保存。">
+  <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="style.css">
+  <script defer type="module" src="app.js"></script>
+</head>
+<body>
+  <header class="topbar no-print">
+    <div class="logo"><span class="logo-icon" aria-hidden="true">▣</span><div><div class="logo-name">英語テスト工房</div><div class="logo-caption">選んで、組み立てる。</div></div></div>
+    <nav class="steps" aria-label="作業の流れ"><button type="button" data-step="choose" class="step active"><span>1</span> 問題を選ぶ</button><span class="step-line"></span><button type="button" data-step="preview" class="step"><span>2</span> 紙面を確認</button></nav>
+    <button id="openData" class="privacy-chip" type="button" title="問題データの取り込み・バックアップ"><span class="privacy-dot"></span><span id="bankCountTop">問題データ 0問</span><span class="privacy-sub">この端末に保存</span></button>
+  </header>
+
+  <main>
+    <section id="chooseView" class="screen">
+      <div class="hero"><div><div class="eyebrow">QUESTION STUDIO</div><h1>ほしい問題を、自由に選ぼう。</h1><p>文法・難易度・問題形式で探して、1問ずつテストに追加。検索条件を変えても選んだ問題は残ります。</p></div><div class="hero-meta" id="heroTopics">プライベートな問題バンク</div></div>
+      <div class="workspace">
+        <section class="main-pane" aria-label="問題を探す">
+          <div class="heading-line"><h2>問題を探す <span class="muted" id="visibleCount">0問</span></h2><div class="small-actions"><button type="button" id="newQuestion" class="text-button">＋ 問題を手入力</button><button type="button" id="importInline" class="text-button">データを読み込む</button></div></div>
+          <div class="filters">
+            <label>文法項目<select id="topicFilter"><option value="">すべて</option></select></label>
+            <label>難易度<select id="levelFilter"><option value="">すべて</option></select></label>
+            <label>問題形式<select id="typeFilter"><option value="">すべて</option></select></label>
+            <label class="filter-search">キーワード<input id="searchInput" type="search" placeholder="英文・日本文・出典で検索"></label>
+          </div>
+          <div class="results-meta"><span id="resultInfo">条件に合う問題を表示します</span><button id="resetFilters" class="subtle-button" type="button">条件をリセット</button></div>
+          <div id="questionList" class="question-list" aria-live="polite"></div>
+        </section>
+        <aside class="builder" aria-label="今回のテスト">
+          <div class="builder-top"><h2>今回のテスト</h2><span class="count-pill" id="selectedCount">0問</span></div>
+          <label class="stacked">テスト名<input id="testTitle" maxlength="80" placeholder="英語 確認テスト" value="英語 確認テスト"></label>
+          <div class="two-cols"><label>用紙<select id="paper"><option value="Letter">Letter</option><option value="A4">A4</option></select></label><label>記述の解答スペース<select id="space"><option value="compact">少なめ</option><option value="standard" selected>標準</option><option value="wide">広め</option></select></label></div>
+          <label class="check-line"><input type="checkbox" id="explain">解答に原本の解説・訳も載せる</label>
+          <div class="divider-line"></div>
+          <div class="selected-head"><strong>出題する問題</strong><button type="button" id="clearSelection" class="subtle-button">すべて外す</button></div>
+          <p class="helper">選んだ順で出題。矢印で順番を変えられます。同じ形式は同じ大問にまとめます。</p>
+          <div id="selectedList" class="selected-list"></div>
+          <button id="goPreview" type="button" class="primary full-width">紙面を確認する <span>→</span></button>
+        </aside>
+      </div>
+    </section>
+
+    <section id="previewView" class="screen hidden">
+      <div class="hero"><div><div class="eyebrow">QUESTION STUDIO</div><h1>選んだ問題を、紙面で確かめる。</h1><p>問題用紙と解答を切り替えて確認。Word形式でダウンロードして、あとから編集できます。</p></div><div class="hero-meta" id="previewTopics">問題と解答を別々に</div></div>
+      <div class="preview-layout">
+        <section class="preview-main">
+          <div class="preview-tools no-print"><div class="tabset"><button class="tab active" id="tabQuestions" data-document="questions" type="button">問題用紙</button><button class="tab" id="tabAnswers" data-document="answers" type="button">解答</button></div><div class="export-buttons"><button id="printQuestions" type="button" class="outline strong">問題を印刷 / PDF</button><button id="printAnswers" type="button" class="outline">解答を印刷 / PDF</button><button id="wordQuestions" type="button" class="outline strong">問題をWordでDL</button><button id="wordAnswers" type="button" class="outline">解答をWordでDL</button></div></div>
+          <p class="download-tip no-print">Wordは編集可能な .docx ファイルです。PDFは印刷画面で「PDFに保存」を選択してください。</p>
+          <div class="paper-wrap"><article id="paperPreview" class="paper"></article></div>
+          <div class="preview-bottom no-print"><button type="button" class="outline" id="backToChoose">← 問題選択へ戻る</button></div>
+        </section>
+        <aside class="builder preview-side no-print"><div class="builder-top"><h2>今回のテスト</h2><span class="count-pill" id="selectedCount2">0問</span></div><label class="stacked">テスト名<input id="testTitle2" maxlength="80"></label><div class="two-cols"><label>用紙<select id="paper2"><option value="Letter">Letter</option><option value="A4">A4</option></select></label><label>解答スペース<select id="space2"><option value="compact">少なめ</option><option value="standard">標準</option><option value="wide">広め</option></select></label></div><label class="check-line"><input type="checkbox" id="explain2">解答に原本の解説・訳も載せる</label><div class="divider-line"></div><div class="selected-head"><strong>出題する問題</strong><span class="helper" id="previewTypeSummary"></span></div><div id="selectedListPreview" class="selected-list"></div><button type="button" id="backToChoose2" class="outline full-width">選び直す</button></aside>
+      </div>
+    </section>
+  </main>
+
+  <dialog id="dataDialog" class="modal no-print"><form method="dialog" class="modal-inner"><div class="modal-head"><div><div class="eyebrow">PRIVATE QUESTION BANK</div><h2>問題データの管理</h2></div><button type="submit" class="close" aria-label="閉じる">×</button></div><p>問題データは、このブラウザの端末内に保存されます。GitHubやサーバーへ自動送信しません。</p><div class="callout"><strong>今の登録数：<span id="dataCount">0</span>問</strong><span>別の端末で使う前には、必ずバックアップを保存してください。ブラウザのデータを消すと登録内容も消えます。</span></div><div class="data-actions"><label class="primary file-label">JSONファイルを読み込む<input id="fileInput" type="file" accept=".json,application/json" hidden></label><button id="backupBank" type="button" class="outline">全問題とテストのバックアップ</button><button id="downloadDraft" type="button" class="outline">今回のテストだけを保存</button></div><p id="importResult" class="helper">読み込み時は同じ問題IDのデータを更新し、新しいIDの問題を追加します。</p><div class="dialog-footer"><button type="submit" class="primary">閉じる</button></div></form></dialog>
+
+  <dialog id="editDialog" class="modal no-print"><form id="questionForm" class="modal-inner"><div class="modal-head"><div><div class="eyebrow">QUESTION EDITOR</div><h2 id="editorHeading">問題を登録する</h2></div><button type="button" id="cancelEdit" class="close" aria-label="閉じる">×</button></div><input type="hidden" name="id" id="editId"><div class="two-cols"><label>文法項目<input name="topic" required placeholder="例：現在完了"></label><label>難易度<select name="level" required><option value="標準">標準</option><option value="発展">発展</option></select></label></div><label>問題形式<input name="type" required placeholder="例：同意文書換（空所）"></label><label>大問の指示文<textarea name="instruction" rows="2" required placeholder="例：次の各組の文がほぼ同じ意味になるように、空所に適する語を書きなさい。"></textarea></label><label>問題文（改行できます）<textarea name="text" rows="5" required></textarea></label><label>選択肢・語群（あれば）<textarea name="choices" rows="2"></textarea></label><div class="two-cols"><label>解答（未入手なら空欄）<textarea name="answer" rows="2"></textarea></label><label>出典・ページ番号<textarea name="source" rows="2" placeholder="例：現在完了_標準.pdf 本p23 大問3(1)"></textarea></label></div><label>解説・訳（あれば）<textarea name="explanation" rows="2"></textarea></label><div class="dialog-footer"><button type="button" id="cancelEdit2" class="outline">キャンセル</button><button type="submit" class="primary">保存する</button></div></form></dialog>
+
+  <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+  <footer class="footer no-print"><span>英語テスト工房 · GitHub Pages版</span><span>問題データはローカル保存（外部送信なし）</span></footer>
+</body>
+</html>
