@@ -32,8 +32,8 @@ function contentXml({questions,title='英語 確認テスト',documentType='ques
   const groups=byType(questions);
   const parts=[];
   parts.push(plain(title, {bold:true,size:32,after:100,keepNext:true}));
-  if(documentType==='questions') parts.push(plain(`全${questions.length}問　　　　　　日付：________________　　氏名：________________`, {size:18,after:200}));
-  else parts.push(plain(`解答・解説　｜　全${questions.length}問`,{size:19,after:220}));
+  if(documentType==='questions') parts.push(plain('日付：________________　　氏名：________________', {size:18,after:200}));
+  else parts.push(plain('解答・解説',{size:19,after:220}));
   groups.forEach((group,gi)=>{
     parts.push(paragraph(run(`【${gi+1}】 `,{bold:true,size:22})+run(group.instruction || `次の問題に答えなさい。`, {bold:true,size:18}),{before:180,after:185,keepNext:true}));
     group.items.forEach((q,qi)=>{

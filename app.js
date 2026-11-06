@@ -48,7 +48,7 @@ const asPageText=(s)=>lines(s);
 function renderPreview(){
  const qs=selected();const answerMode=state.documentType==='answers';$('tabQuestions').classList.toggle('active',!answerMode);$('tabAnswers').classList.toggle('active',answerMode);
  $('paperPreview').className=`paper ${state.paper.toLowerCase()}`;
- let html=`<div class="paper-head"><h2>${esc(state.title)}</h2><div class="paper-metadata"><span>${answerMode?'解答・解説':`全${qs.length}問`}</span><span>${answerMode?'': '日付：______________'}</span><span>${answerMode?'': '氏名：____________________'}</span></div></div>`;
+ let html=`<div class="paper-head"><h2>${esc(state.title)}</h2><div class="paper-metadata">${answerMode?'<span>解答・解説</span>':'<span>日付：______________</span><span>氏名：____________________</span>'}</div></div>`;
  groups().forEach((g,i)=>{
    html+=`<section class="paper-group"><div class="paper-group-header"><strong>【${i+1}】</strong><span>${asPageText(g.instruction||'次の問題に答えなさい。')}</span></div>`;
    g.items.forEach((q,j)=>{
