@@ -35,7 +35,8 @@
         <aside class="builder" aria-label="今回のテスト">
           <div class="builder-top"><h2>今回のテスト</h2><span class="count-pill" id="selectedCount">0問</span></div>
           <label class="stacked">テスト名<input id="testTitle" maxlength="80" placeholder="英語 確認テスト" value="英語 確認テスト"></label>
-          <div class="two-cols"><label>用紙<select id="paper"><option value="Letter">Letter</option><option value="A4">A4</option></select></label><label>記述の解答スペース<select id="space"><option value="compact">少なめ</option><option value="standard" selected>標準</option><option value="wide">広め</option></select></label></div>
+          <div class="two-cols"><label>用紙<select id="paper"><option value="Letter">Letter</option><option value="A4">A4</option></select></label><label>問題用紙の表示<select id="answerArea"><option value="with">解答欄あり</option><option value="none">問題のみ（解答欄なし）</option></select></label></div>
+          <label class="stacked">記述の解答スペース<select id="space"><option value="compact">少なめ</option><option value="standard" selected>標準</option><option value="wide">広め</option></select></label>
           <label class="check-line"><input type="checkbox" id="explain">解答に原本の解説・訳も載せる</label>
           <div class="divider-line"></div>
           <div class="selected-head"><strong>出題する問題</strong><button type="button" id="clearSelection" class="subtle-button">すべて外す</button></div>
@@ -55,7 +56,7 @@
           <div class="paper-wrap"><article id="paperPreview" class="paper"></article></div>
           <div class="preview-bottom no-print"><button type="button" class="outline" id="backToChoose">← 問題選択へ戻る</button></div>
         </section>
-        <aside class="builder preview-side no-print"><div class="builder-top"><h2>今回のテスト</h2><span class="count-pill" id="selectedCount2">0問</span></div><label class="stacked">テスト名<input id="testTitle2" maxlength="80"></label><div class="two-cols"><label>用紙<select id="paper2"><option value="Letter">Letter</option><option value="A4">A4</option></select></label><label>解答スペース<select id="space2"><option value="compact">少なめ</option><option value="standard">標準</option><option value="wide">広め</option></select></label></div><label class="check-line"><input type="checkbox" id="explain2">解答に原本の解説・訳も載せる</label><div class="divider-line"></div><div class="selected-head"><strong>出題する問題</strong><span class="helper" id="previewTypeSummary"></span></div><div id="selectedListPreview" class="selected-list"></div><button type="button" id="backToChoose2" class="outline full-width">選び直す</button></aside>
+        <aside class="builder preview-side no-print"><div class="builder-top"><h2>今回のテスト</h2><span class="count-pill" id="selectedCount2">0問</span></div><label class="stacked">テスト名<input id="testTitle2" maxlength="80"></label><div class="two-cols"><label>用紙<select id="paper2"><option value="Letter">Letter</option><option value="A4">A4</option></select></label><label>問題用紙の表示<select id="answerArea2"><option value="with">解答欄あり</option><option value="none">問題のみ（解答欄なし）</option></select></label></div><label class="stacked">記述の解答スペース<select id="space2"><option value="compact">少なめ</option><option value="standard">標準</option><option value="wide">広め</option></select></label><label class="check-line"><input type="checkbox" id="explain2">解答に原本の解説・訳も載せる</label><div class="divider-line"></div><div class="selected-head"><strong>出題する問題</strong><span class="helper" id="previewTypeSummary"></span></div><div id="selectedListPreview" class="selected-list"></div><button type="button" id="backToChoose2" class="outline full-width">選び直す</button></aside>
       </div>
     </section>
   </main>

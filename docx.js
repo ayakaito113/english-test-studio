@@ -28,7 +28,7 @@ function paragraph(runs, opt={}){
 }
 const plain = (text,opt={})=>paragraph(run(text,opt),opt);
 const choice = (q) => q.choices && !String(q.text).includes(String(q.choices)) ? String(q.choices).trim():'';
-function contentXml({questions,title='英語 確認テスト',documentType='questions',paper='Letter',space='standard',explain=false}) {
+function contentXml({questions,title='英語 確認テスト',documentType='questions',paper='Letter',space='standard',answerArea='with',explain=false}) {
   const groups=byType(questions);
   const parts=[];
   parts.push(plain(title, {bold:true,size:32,after:100,keepNext:true}));
@@ -43,8 +43,10 @@ function contentXml({questions,title='英語 確認テスト',documentType='ques
       parts.push(paragraph(run(`(${qi+1})`,{size:20})+run(`  ${condition}${text}`,{serif:true,size:22}),{left:170,after:90,keepNext:documentType==='questions'&&!!choice(q)}));
       if(documentType==='questions'){
         if(choice(q)) parts.push(plain(`　　${choice(q)}`,{serif:true,size:19,left:370,after:80}));
-        if(q.answer && q.type && q.type.includes('選択')) parts.push(plain(`　　　　　　　　　　　　　　　　　　　答え（　　　　）`,{size:17,left:380,after:160}));
-        else if(space!=='compact') parts.push(plain('________________________________________________________________________________', {size:16,left:370,after:space==='wide'?300:160}));
+        if(answerArea!=='none'){
+          if(q.type && q.type.includes('選択')) parts.push(plain('　　　　　　　　　　　　　　　　　　　答え（　　　　）',{size:17,left:380,after:160}));
+          else if(space!=='compact') parts.push(plain('________________________________________________________________________________', {size:16,left:370,after:space==='wide'?300:160}));
+        }
       }else if(explain && q.explanation)parts.push(plain(`　解説・訳：${q.explanation}`,{size:17,left:370,after:180}));
     });
   });

@@ -17,7 +17,7 @@ export function parseInstruction(value) {
     }
   }
   return {
-    heading: headingLines.join(' ').replace(/[ \t]+/g, ' ').trim(),
+    heading: headingLines.join(' ').replace(/(?:…{2,}|\.{4,}|[・･]{3,})/g, '空所').replace(/[ \t]+/g, ' ').replace(/([，、])[ \t]+(?=空所)/g, '$1').trim(),
     condition: conditions.join('／')
   };
 }
