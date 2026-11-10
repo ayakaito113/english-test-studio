@@ -35,7 +35,46 @@ function refreshList(){const arr=filtered();$('visibleCount').textContent=`${arr
  if(!arr.length){$('questionList').innerHTML='<div class="empty"><strong>該当する問題がありません</strong>検索条件を変えてみてください。</div>';return;}
  const shown=arr.slice(0,state.displayLimit);$('questionList').innerHTML=shown.map(q=>{const added=state.selectedIds.includes(q.id);return `<article class="q-card" data-id="${esc(q.id)}"><div class="q-card-head"><div class="q-tags"><span class="tag">${esc(q.topic)}</span><span class="tag level">${esc(q.level)}</span><span class="tag type">${esc(q.type)}</span></div><span class="q-source">${q.answer?'解答あり':'解答待ち'}</span></div><div class="q-provenance" title="${esc(q.source)}"><span class="q-provenance-key">出典</span><span class="q-provenance-value">${esc(siriusSourceLabel(q.source))}</span></div><div class="q-main">${lines(q.text)}</div>${q.choices?`<div class="q-choices">${lines(q.choices)}</div>`:''}<div class="q-actions"><div class="q-actions-right"><button type="button" class="tiny-button" data-action="edit" data-id="${esc(q.id)}">修正</button><button type="button" data-action="toggle" data-id="${esc(q.id)}" class="primary add-button ${added?'chosen':''}">${added?'✓ 追加済み':'＋ 追加'}</button></div></div></article>`;}).join('')+(arr.length>shown.length?`<button type="button" class="outline full-width" data-action="more">さらに表示（${shown.length} / ${arr.length}問）</button>`:'');}
 function selectedMarkup(){const items=selected();if(!items.length)return '<div class="empty"><strong>まだ選ばれていません</strong><span>左側から問題を追加してください。</span></div>';return items.map((q,i)=>`<div class="selected-card"><span class="sel-n">${i+1}</span><div><div class="sel-tags">${esc(q.topic)} · ${esc(q.level)} / ${esc(q.type)}</div><div class="sel-title">${esc(short(q.text,94))}</div><div class="sel-source" title="${esc(q.source)}">${esc(siriusSourceLabel(q.source))}</div><div class="sel-order"><button type="button" class="icon-button" data-action="up" data-id="${esc(q.id)}" ${i===0?'disabled':''} aria-label="上へ移動">↑</button><button type="button" class="icon-button" data-action="down" data-id="${esc(q.id)}" ${i===items.length-1?'disabled':''} aria-label="下へ移動">↓</button></div></div><button class="sel-del" data-action="remove" data-id="${esc(q.id)}" type="button" title="取り外す" aria-label="取り外す">×</button></div>`).join('');}
-function renderSelection(){const html=selectedMarkup();$('selectedList').innerHTML=html;$('selectedListPreview').innerHTML=html;$('goPreview').disabled=!state.selectedIds.length;$('clearSelection').disabled=!state.selectedIds.length;$('selectedCount').textContent=`${state.selectedIds.length}問`;$('selectedCount2').textContent=`${state.selectedIds.length}問`;}
+
+/**
+ * Shuffle only questions belonging to the same printed big-question type.
+ * The first occurrence of each type (and therefore the order of big questions)
+ * stays unchanged. Interleaved selections are supported; no new questions are added.
+ */
+function shuffleWithinTypes(ids, questions, rng=Math.random) {
+ const byId=new Map(questions.map(q=>[q.id,q]));
+ const positionsByType=new Map();
+ ids.forEach((id,index)=>{
+   const q=byId.get(id);
+   if(!q)return;
+   const type=q.type||'その他';
+   if(!positionsByType.has(type))positionsByType.set(type,[]);
+   positionsByType.get(type).push(index);
+ });
+ const result=[...ids];
+ let shuffledGroups=0;
+ for(const positions of positionsByType.values()){
+   if(positions.length<2)continue;
+   const original=positions.map(index=>result[index]);
+   const mixed=[...original];
+   for(let i=mixed.length-1;i>0;i--){
+     const j=Math.floor(rng()*(i+1));
+     [mixed[i],mixed[j]]=[mixed[j],mixed[i]];
+   }
+   // A shuffle button should visibly rearrange every group with 2+ questions.
+   if(mixed.every((id,i)=>id===original[i]))[mixed[0],mixed[1]]=[mixed[1],mixed[0]];
+   positions.forEach((position,i)=>{result[position]=mixed[i];});
+   shuffledGroups++;
+ }
+ return {ids:result,shuffledGroups};
+}
+function shuffleSelectedWithinTypes(){
+ const {ids,shuffledGroups}=shuffleWithinTypes(state.selectedIds,state.questions);
+ if(!shuffledGroups){notice('同じ形式の問題を2問以上選ぶとシャッフルできます');return;}
+ setSelected(ids);
+ notice(`${shuffledGroups}大問の小問をシャッフルしました`);
+}
+function renderSelection(){const html=selectedMarkup();$('selectedList').innerHTML=html;$('selectedListPreview').innerHTML=html;$('goPreview').disabled=!state.selectedIds.length;$('clearSelection').disabled=!state.selectedIds.length;const canShuffle=groups().some(g=>g.items.length>1);$('shuffleWithinType').disabled=!canShuffle;$('shuffleWithinType2').disabled=!canShuffle;$('selectedCount').textContent=`${state.selectedIds.length}問`;$('selectedCount2').textContent=`${state.selectedIds.length}問`;}
 function setSelected(ids){const oldCount=state.selectedIds.length;state.selectedIds=unique(ids).filter(id=>state.questions.some(q=>q.id===id));refreshList();renderSelection();updateCounters();renderLivePreview(state.selectedIds.length>oldCount);if(state.step==='preview')renderPreview();void saveDraft();}
 function actionClick(action,id){if(action==='more'){state.displayLimit+=60;refreshList();return;}const ix=state.selectedIds.indexOf(id);if(action==='toggle'){if(ix<0)setSelected([...state.selectedIds,id]);else setSelected(state.selectedIds.filter(x=>x!==id));}
  if(action==='remove')setSelected(state.selectedIds.filter(x=>x!==id));
@@ -104,6 +143,7 @@ function bind(){
  $('resetFilters').addEventListener('click',()=>{for(const id of ['topicFilter','levelFilter','typeFilter','searchInput'])$(id).value='';state.displayLimit=60;refreshList();});
  document.addEventListener('click',ev=>{const t=ev.target.closest('[data-action]');if(!t)return;actionClick(t.dataset.action,t.dataset.id);});
  document.querySelectorAll('[data-step]').forEach(btn=>btn.addEventListener('click',()=>{if(btn.dataset.step==='preview'&&!selected().length){notice('先に問題を選んでください');return;}showStep(btn.dataset.step);}));
+ ['shuffleWithinType','shuffleWithinType2'].forEach(id=>$(id).addEventListener('click',shuffleSelectedWithinTypes));
  $('clearSelection').addEventListener('click',()=>{if(!state.selectedIds.length)return;setSelected([]);notice('前回の選択をリセットしました。問題バンクはそのままです。');});$('goPreview').addEventListener('click',()=>showStep('preview'));$('backToChoose').addEventListener('click',()=>showStep('choose'));$('backToChoose2').addEventListener('click',()=>showStep('choose'));
  $('testTitle2').addEventListener('input',ev=>updateSetting('title',ev.target.value||'英語 確認テスト'));
  $('paper2').addEventListener('change',ev=>updateSetting('paper',ev.target.value));
