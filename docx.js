@@ -3,6 +3,7 @@
  * ZIP entries are stored (uncompressed) for maximal browser compatibility.
  */
 import {parseInstruction, formatQuestionText} from './formatting.js';
+import {siriusSourceLabel} from './source.js';
 const encoder = new TextEncoder();
 const xml = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;');
 const byType = (questions) => {
@@ -23,12 +24,13 @@ function paragraph(runs, opt={}){
   const keep = opt.keepNext?'<w:keepNext/>':'';
   const line = `<w:spacing w:before="${opt.before||0}" w:after="${opt.after??110}" w:line="${opt.line||310}" w:lineRule="auto"/>`;
   const indent=opt.left?`<w:ind w:left="${opt.left}"/>`:'';
-  const pPr=`<w:pPr>${keep}${line}${indent}</w:pPr>`;
+  const align=opt.right?'<w:jc w:val="right"/>':'';
+  const pPr=`<w:pPr>${keep}${line}${indent}${align}</w:pPr>`;
   return `<w:p>${pPr}${runs}</w:p>`;
 }
 const plain = (text,opt={})=>paragraph(run(text,opt),opt);
 const choice = (q) => q.choices && !String(q.text).includes(String(q.choices)) ? String(q.choices).trim():'';
-function contentXml({questions,title='英語 確認テスト',documentType='questions',paper='Letter',space='standard',answerArea='with',explain=false}) {
+function contentXml({questions,title='英語 確認テスト',documentType='questions',paper='Letter',space='standard',answerArea='with',explain=false,showSources=true}) {
   const groups=byType(questions);
   const parts=[];
   parts.push(plain(title, {bold:true,size:32,after:100,keepNext:true}));
@@ -37,17 +39,22 @@ function contentXml({questions,title='英語 確認テスト',documentType='ques
   groups.forEach((group,gi)=>{
     parts.push(paragraph(run(`【${gi+1}】 `,{bold:true,size:22})+run(group.instruction || `次の問題に答えなさい。`, {bold:true,size:18}),{before:180,after:185,keepNext:true}));
     group.items.forEach((q,qi)=>{
+      const sourceText=showSources && String(q.source||'').trim()?`出典：${siriusSourceLabel(q.source)}`:'';
       const heading=parseInstruction(q.instruction).heading;
       const condition=(heading && heading!==group.instruction) ? `（個別の指示：${heading}）\n`:'';
       const text = documentType==='questions' ? formatQuestionText(q) : (String(q.answer||'').trim()?q.answer:'［解答未登録］');
       parts.push(paragraph(run(`(${qi+1})`,{size:20})+run(`  ${condition}${text}`,{serif:true,size:22}),{left:170,after:90,keepNext:documentType==='questions'&&!!choice(q)}));
       if(documentType==='questions'){
         if(choice(q)) parts.push(plain(`　　${choice(q)}`,{serif:true,size:19,left:370,after:80}));
+        if(sourceText) parts.push(plain(sourceText,{size:16,right:true,after:100}));
         if(answerArea!=='none'){
           if(q.type && q.type.includes('選択')) parts.push(plain('　　　　　　　　　　　　　　　　　　　答え（　　　　）',{size:17,left:380,after:160}));
           else if(space!=='compact') parts.push(plain('________________________________________________________________________________', {size:16,left:370,after:space==='wide'?300:160}));
         }
-      }else if(explain && q.explanation)parts.push(plain(`　解説・訳：${q.explanation}`,{size:17,left:370,after:180}));
+      }else{
+        if(explain && q.explanation) parts.push(plain(`　解説・訳：${q.explanation}`,{size:17,left:370,after:130}));
+        if(sourceText) parts.push(plain(sourceText,{size:16,right:true,after:110}));
+      }
     });
   });
   const isA4=paper==='A4';

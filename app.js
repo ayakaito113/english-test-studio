@@ -1,12 +1,13 @@
 import {downloadDocx} from './docx.js';
 import {parseInstruction, formatQuestionText} from './formatting.js';
+import {siriusSourceLabel} from './source.js';
 
 const $ = id => document.getElementById(id);
 const esc = str => String(str??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
 const lines = str => esc(str).replace(/\r?\n/g,'<br>');
 const short = (s,n=92) => String(s||'').replace(/\s+/g,' ').slice(0,n);
 const idGen = () => `manual-${new Date().toISOString().replace(/[-:.TZ]/g,'')}-${Math.random().toString(36).slice(2,8)}`;
-const blankDraft = {title:'英語 確認テスト', paper:'Letter',space:'standard',answerArea:'with',explain:false,selectedIds:[]};
+const blankDraft = {title:'英語 確認テスト', paper:'Letter',space:'standard',answerArea:'with',explain:false,showSources:true,selectedIds:[]};
 const state = {questions:[], selectedIds:[],displayLimit:60,step:'choose', documentType:'questions',...blankDraft};
 let db;
 let toastTimer;
@@ -15,7 +16,7 @@ function openDb(){return new Promise((resolve,reject)=>{const req=indexedDB.open
 function transaction(store,mode,fn){return new Promise((resolve,reject)=>{const tx=db.transaction(store,mode),object=tx.objectStore(store);let request;try{request=fn(object);}catch(e){reject(e);return;}tx.oncomplete=()=>resolve(request?.result);tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error);});}
 const getQuestions=()=>transaction('questions','readonly',s=>s.getAll());
 const getDraft=()=>transaction('settings','readonly',s=>s.get('draft'));
-const saveDraft=()=>transaction('settings','readwrite',s=>s.put({key:'draft',value:{title:state.title,paper:state.paper,space:state.space,answerArea:state.answerArea,explain:state.explain,selectedIds:state.selectedIds}}));
+const saveDraft=()=>transaction('settings','readwrite',s=>s.put({key:'draft',value:{title:state.title,paper:state.paper,space:state.space,answerArea:state.answerArea,explain:state.explain,showSources:state.showSources,selectedIds:state.selectedIds}}));
 const putQuestions=arr=>transaction('questions','readwrite',s=>{for(const q of arr)s.put(q);});
 const selected=()=>state.selectedIds.map(id=>state.questions.find(q=>q.id===id)).filter(Boolean);
 const groups=()=>{const map=new Map();for(const q of selected()){const type=q.type||'その他';if(!map.has(type))map.set(type,{type,instruction:parseInstruction(q.instruction).heading,items:[]});map.get(type).items.push(q);}return [...map.values()];};
@@ -29,17 +30,6 @@ function fillOptions(id,values){const el=$(id),prev=el.value;el.innerHTML='<opti
 function refreshOptions(){fillOptions('topicFilter',state.questions.map(q=>q.topic));fillOptions('levelFilter',state.questions.map(q=>q.level));fillOptions('typeFilter',state.questions.map(q=>q.type));}
 function filtered(){const topic=$('topicFilter').value,level=$('levelFilter').value,type=$('typeFilter').value,query=$('searchInput').value.trim().toLowerCase();return state.questions.filter(q=>(!topic||q.topic===topic)&&(!level||q.level===level)&&(!type||q.type===type)&&(!query||[q.text,q.choices,q.source,q.topic,q.type].join(' ').toLowerCase().includes(query)));}
 function updateCounters(){const n=state.questions.length;$('bankCountTop').textContent=`問題データ ${n}問`;$('dataCount').textContent=n;$('selectedCount').textContent=`${state.selectedIds.length}問`;$('selectedCount2').textContent=`${state.selectedIds.length}問`;$('heroTopics').innerHTML=n?`${unique(state.questions.map(q=>q.topic)).length}文法項目<br>標準・発展の問題バンク`:'問題データを読み込んで開始';$('previewTopics').textContent=`${state.selectedIds.length}問／${groups().length}大問`;}
-function siriusSourceLabel(source) {
- const raw=String(source||'').trim();
- if(!raw)return '出典未登録';
- const page=raw.match(/(?:本|Sirius)\s*[pｐ](?:age)?\.?\s*([0-9０-９]+(?:[-〜–][0-9０-９]+)?)/i);
- const section=raw.match(/大問\s*([0-9０-９]+)\s*[（(]\s*([0-9０-９]+)\s*[）)]/);
- if(!page&&!section)return raw.replace(/\r?\n+/g,' / ').replace(/[ \t]{2,}/g,' ').trim();
- const result=[];
- if(page)result.push(`Sirius p.${page[1]}`);
- if(section)result.push(`大問${section[1]} (${section[2]})`);
- return result.join(' ／ ');
-}
 function refreshList(){const arr=filtered();$('visibleCount').textContent=`${arr.length}問`;$('resultInfo').textContent=`${state.questions.length}問から ${arr.length}問を表示`;
  if(!state.questions.length){$('questionList').innerHTML=`<div class="empty"><strong>問題バンクはまだ空です</strong><div>まず手元にある非公開JSONファイルを読み込もう。<br>読み込んだ問題はこのブラウザ内だけに保存されます。</div><button type="button" class="primary" data-action="import">JSONファイルを読み込む</button></div>`;return;}
  if(!arr.length){$('questionList').innerHTML='<div class="empty"><strong>該当する問題がありません</strong>検索条件を変えてみてください。</div>';return;}
@@ -52,7 +42,7 @@ function actionClick(action,id){if(action==='more'){state.displayLimit+=60;refre
  if(action==='up'&&ix>0){const x=[...state.selectedIds];[x[ix-1],x[ix]]=[x[ix],x[ix-1]];setSelected(x);}
  if(action==='down'&&ix>=0&&ix<state.selectedIds.length-1){const x=[...state.selectedIds];[x[ix],x[ix+1]]=[x[ix+1],x[ix]];setSelected(x);}
  if(action==='edit')openEditor(id);if(action==='import')$('dataDialog').showModal();}
-function syncSettings(){ $('testTitle2').value=state.title; $('paper2').value=state.paper; $('space2').value=state.space; $('space2').disabled=state.answerArea==='none'; $('answerArea2').value=state.answerArea; $('explain2').checked=state.explain; }
+function syncSettings(){ $('testTitle2').value=state.title; $('paper2').value=state.paper; $('space2').value=state.space; $('space2').disabled=state.answerArea==='none'; $('answerArea2').value=state.answerArea; $('explain2').checked=state.explain; $('showSources2').checked=state.showSources; }
 function updateSetting(field,value){state[field]=value;syncSettings();renderLivePreview();void saveDraft();if(state.step==='preview')renderPreview();}
 function showStep(step){state.step=step;$('chooseView').classList.toggle('hidden',step!=='choose');$('previewView').classList.toggle('hidden',step!=='preview');document.querySelectorAll('.step').forEach(b=>b.classList.toggle('active',b.dataset.step===step));if(step==='preview')renderPreview();window.scrollTo(0,0);}
 const asPageText=(s)=>lines(s);
@@ -65,11 +55,12 @@ function paperMarkup(answerMode=false){
    g.items.forEach((q,j)=>{
      const heading=parseInstruction(q.instruction).heading;
       const specific=heading && heading!==g.instruction ? `<div class="paper-specific">個別の指示：${asPageText(heading)}</div>` : '';
+      const sourceTag=state.showSources && String(q.source||'').trim() ? `<div class="paper-source">出典：${esc(siriusSourceLabel(q.source))}</div>` : '';
      if(!answerMode){
        const answerBox=state.answerArea==='none' ? '' : q.type.includes('選択') ? '<div class="answer-space compact" style="border:none;text-align:right">答え（　　）</div>' : `<div class="answer-space ${esc(state.space)}"></div>`;
-       html+=`<div class="paper-question"><div class="paper-qnum">(${j+1})</div><div>${specific}<div class="paper-text">${asPageText(formatQuestionText(q))}</div>${q.choices&&!q.text.includes(q.choices)?`<div class="paper-choices">${asPageText(q.choices)}</div>`:''}${answerBox}</div></div>`;
+       html+=`<div class="paper-question"><div class="paper-qnum">(${j+1})</div><div>${specific}<div class="paper-text">${asPageText(formatQuestionText(q))}</div>${q.choices&&!q.text.includes(q.choices)?`<div class="paper-choices">${asPageText(q.choices)}</div>`:''}${sourceTag}${answerBox}</div></div>`;
      }else{
-       html+=`<div class="paper-question answer-card"><div class="paper-qnum">(${j+1})</div><div><div class="paper-text answer-main">${asPageText(q.answer.trim()||'［解答未登録］')}</div>${state.explain&&q.explanation?`<div class="answer-explain">解説・訳：${asPageText(q.explanation)}</div>`:''}</div></div>`;
+       html+=`<div class="paper-question answer-card"><div class="paper-qnum">(${j+1})</div><div><div class="paper-text answer-main">${asPageText(q.answer.trim()||'［解答未登録］')}</div>${state.explain&&q.explanation?`<div class="answer-explain">解説・訳：${asPageText(q.explanation)}</div>`:''}${sourceTag}</div></div>`;
      }
    });html+='</section>';
  });
@@ -100,12 +91,12 @@ function renderPreview(){
  document.head.appendChild(printSize);
 }
 async function importFile(file){try{const parsed=parseImport(await file.text());if(parsed.questions.length){await putQuestions(parsed.questions);state.questions=await getQuestions();refreshOptions();}
-  if(parsed.draft){const d=parsed.draft;state.title=d.title||state.title;state.paper=d.paper==='A4'?'A4':'Letter';state.space=['compact','standard','wide'].includes(d.space)?d.space:'standard';state.answerArea=d.answerArea==='none'?'none':'with';state.explain=!!d.explain;state.selectedIds=unique(d.selectedIds||[]).filter(id=>state.questions.some(q=>q.id===id));syncSettings();await saveDraft();}
+  if(parsed.draft){const d=parsed.draft;state.title=d.title||state.title;state.paper=d.paper==='A4'?'A4':'Letter';state.space=['compact','standard','wide'].includes(d.space)?d.space:'standard';state.answerArea=d.answerArea==='none'?'none':'with';state.explain=!!d.explain;state.showSources=d.showSources!==false;state.selectedIds=unique(d.selectedIds||[]).filter(id=>state.questions.some(q=>q.id===id));syncSettings();await saveDraft();}
   refreshAll();const message=`${parsed.questions.length}問を読み込みました。登録済み合計 ${state.questions.length}問。`;$('importResult').textContent=message;notice(message);
  }catch(e){$('importResult').textContent=`読み込みエラー：${e.message}`;notice(`読み込みできません：${e.message}`);}}
 function saveJson(data,filename){const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json;charset=utf-8'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=filename;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000);}
 const safeFileName = s => String(s||'test').replace(/[\\/:*?"<>|]/g,'_').replace(/\s+/g,'_').slice(0,40);
-function currentDraft(){return {title:state.title,paper:state.paper,space:state.space,answerArea:state.answerArea,explain:state.explain,selectedIds:state.selectedIds};}
+function currentDraft(){return {title:state.title,paper:state.paper,space:state.space,answerArea:state.answerArea,explain:state.explain,showSources:state.showSources,selectedIds:state.selectedIds};}
 function openEditor(id){const form=$('questionForm');form.reset();const q=state.questions.find(q=>q.id===id);$('editorHeading').textContent=q?'問題を編集する':'問題を登録する';for(const field of ['id','topic','level','type','instruction','text','choices','answer','source','explanation']){const el=form.elements.namedItem(field);if(el)el.value=q?.[field]||'';}$('editDialog').showModal();}
 function refreshAll(){refreshOptions();refreshList();renderSelection();updateCounters();renderLivePreview();if(state.step==='preview')renderPreview();}
 function bind(){
@@ -119,6 +110,7 @@ function bind(){
  $('space2').addEventListener('change',ev=>updateSetting('space',ev.target.value));
   $('answerArea2').addEventListener('change',ev=>updateSetting('answerArea',ev.target.value));
  $('explain2').addEventListener('change',ev=>updateSetting('explain',ev.target.checked));
+ $('showSources2').addEventListener('change',ev=>updateSetting('showSources',ev.target.checked));
  for(const btn of document.querySelectorAll('[data-document]'))btn.addEventListener('click',()=>{state.documentType=btn.dataset.document;renderPreview();});
  for(const [id,type] of [['wordQuestions','questions'],['wordAnswers','answers']])$(id).addEventListener('click',()=>{if(!selected().length)return notice('問題を選んでください');downloadDocx({...currentDraft(),questions:selected(),documentType:type});notice((type==='answers'?'解答':'問題')+'のWordファイルを生成しました');});
  for(const [id,type] of [['printQuestions','questions'],['printAnswers','answers']])$(id).addEventListener('click',()=>{state.documentType=type;renderPreview();window.print();});
@@ -129,5 +121,5 @@ function bind(){
  $('newQuestion').addEventListener('click',()=>openEditor());$('cancelEdit').addEventListener('click',()=>$('editDialog').close());$('cancelEdit2').addEventListener('click',()=>$('editDialog').close());
  $('questionForm').addEventListener('submit',async ev=>{ev.preventDefault();const form=ev.currentTarget,raw={};for(const key of ['id','topic','level','type','instruction','text','choices','answer','source','explanation'])raw[key]=form.elements.namedItem(key).value;try{const q=normalize(raw);await putQuestions([q]);state.questions=await getQuestions();refreshAll();$('editDialog').close();notice('問題を保存しました');}catch(e){notice(e.message);}});
 }
-async function init(){bind();try{db=await openDb();state.questions=await getQuestions();const stored=(await getDraft())?.value;if(stored){state.title=stored.title||state.title;state.paper=stored.paper==='A4'?'A4':'Letter';state.space=['compact','standard','wide'].includes(stored.space)?stored.space:'standard';state.answerArea=stored.answerArea==='none'?'none':'with';state.explain=!!stored.explain;state.selectedIds=unique(stored.selectedIds||[]).filter(id=>state.questions.some(q=>q.id===id));}syncSettings();refreshAll();}catch(err){console.error(err);$('questionList').innerHTML='<div class="empty"><strong>端末内のデータを開けません</strong><div>プライベートブラウズを解除して再度開いてください。</div></div>';notice('このブラウザでは保存領域を利用できません。通常モードで開いてください。');}}
+async function init(){bind();try{db=await openDb();state.questions=await getQuestions();const stored=(await getDraft())?.value;if(stored){state.title=stored.title||state.title;state.paper=stored.paper==='A4'?'A4':'Letter';state.space=['compact','standard','wide'].includes(stored.space)?stored.space:'standard';state.answerArea=stored.answerArea==='none'?'none':'with';state.explain=!!stored.explain;state.showSources=stored.showSources!==false;state.selectedIds=unique(stored.selectedIds||[]).filter(id=>state.questions.some(q=>q.id===id));}syncSettings();refreshAll();}catch(err){console.error(err);$('questionList').innerHTML='<div class="empty"><strong>端末内のデータを開けません</strong><div>プライベートブラウズを解除して再度開いてください。</div></div>';notice('このブラウザでは保存領域を利用できません。通常モードで開いてください。');}}
 init();
