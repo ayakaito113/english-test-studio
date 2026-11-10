@@ -94,7 +94,51 @@ function shuffleSelectedWithinTypes(){
  setSelected(ids);
  notice(`${shuffledGroups}大問の小問をシャッフルしました`);
 }
-function renderSelection(){const html=selectedMarkup();$('selectedList').innerHTML=html;$('selectedListPreview').innerHTML=html;$('goPreview').disabled=!state.selectedIds.length;$('clearSelection').disabled=!state.selectedIds.length;const canShuffle=groups().some(g=>g.items.length>1);$('shuffleWithinType').disabled=!canShuffle;$('shuffleWithinType2').disabled=!canShuffle;$('selectedCount').textContent=`${state.selectedIds.length}問`;$('selectedCount2').textContent=`${state.selectedIds.length}問`;}
+
+/** Create a count-only view of the current test, independent of search filters and source book. */
+function calculateBalance(questions){
+ const topics=new Map();
+ let standard=0,advanced=0,other=0;
+ for(const q of questions){
+   const topic=String(q.topic||'未分類').trim()||'未分類';
+   if(!topics.has(topic))topics.set(topic,{topic,standard:0,advanced:0,other:0,total:0});
+   const tally=topics.get(topic);
+   if(q.level==='標準'){standard++;tally.standard++;}
+   else if(q.level==='発展'){advanced++;tally.advanced++;}
+   else {other++;tally.other++;}
+   tally.total++;
+ }
+ return {
+   total:questions.length,standard,advanced,other,topicCount:topics.size,
+   topics:[...topics.values()].sort((a,b)=>b.total-a.total||a.topic.localeCompare(b.topic,'ja'))
+ };
+}
+function renderBalance(){
+ const stats=calculateBalance(selected());
+ const cards=[
+   ['合計',stats.total],['文法分野',stats.topicCount],
+   ['標準',stats.standard],['発展',stats.advanced]
+ ];
+ $('balanceStats').innerHTML=cards.map(([label,count])=>`<div class="balance-stat"><span>${esc(label)}</span><strong>${count}<small>${label==='文法分野'?'分野':'問'}</small></strong></div>`).join('');
+ if(!stats.topics.length){
+   $('balanceChart').innerHTML='<p class="balance-empty">問題を選ぶと、文法分野と難易度の内訳がここに表示されます。</p>';
+   return;
+ }
+ const max=Math.max(...stats.topics.map(row=>row.total),1);
+ $('balanceChart').innerHTML=stats.topics.map(row=>{
+   const width=n=>(n/max*100).toFixed(2)+'%';
+   const accessible=`${row.topic} ${row.total}問、標準${row.standard}問、発展${row.advanced}問${row.other? `、その他${row.other}問`:''}`;
+   return `<div class="balance-row">
+     <div class="balance-row-heading"><strong title="${esc(row.topic)}">${esc(row.topic)}</strong><span>${row.total}問</span></div>
+     <div class="balance-track" role="img" aria-label="${esc(accessible)}">
+       <span class="balance-segment standard" style="width:${width(row.standard)}"></span><span class="balance-segment advanced" style="width:${width(row.advanced)}"></span><span class="balance-segment other" style="width:${width(row.other)}"></span>
+     </div>
+     <div class="balance-row-numbers">標準 ${row.standard} ・ 発展 ${row.advanced}${row.other?` ・ その他 ${row.other}`:''}</div>
+   </div>`;
+ }).join('');
+}
+
+function renderSelection(){const html=selectedMarkup();$('selectedList').innerHTML=html;$('selectedListPreview').innerHTML=html;$('goPreview').disabled=!state.selectedIds.length;$('clearSelection').disabled=!state.selectedIds.length;const canShuffle=groups().some(g=>g.items.length>1);$('shuffleWithinType').disabled=!canShuffle;$('shuffleWithinType2').disabled=!canShuffle;$('selectedCount').textContent=`${state.selectedIds.length}問`;$('selectedCount2').textContent=`${state.selectedIds.length}問`;renderBalance();}
 function setSelected(ids){const oldCount=state.selectedIds.length;state.selectedIds=unique(ids).filter(id=>state.questions.some(q=>q.id===id));refreshList();renderSelection();updateCounters();renderLivePreview(state.selectedIds.length>oldCount);if(state.step==='preview')renderPreview();void saveDraft();}
 function actionClick(action,id){if(action==='more'){state.displayLimit+=60;refreshList();return;}const ix=state.selectedIds.indexOf(id);if(action==='toggle'){if(ix<0)setSelected([...state.selectedIds,id]);else setSelected(state.selectedIds.filter(x=>x!==id));}
  if(action==='remove')setSelected(state.selectedIds.filter(x=>x!==id));

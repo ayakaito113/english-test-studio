@@ -9,6 +9,34 @@
 @media(max-width:450px){.filters{grid-template-columns:1fr}.privacy-chip{font-size:10px;padding:5px 9px}.small-actions{gap:8px}.q-card{padding:14px}.paper{padding:15px;font-size:12px}.paper-group-header{gap:6px}.paper-group-header span{font-size:10px}.modal-inner{padding:19px 17px}}
 
 
+
+/* Selected-question balance: compact horizontal stacked bars in test settings. */
+.balance-panel{margin:0 0 18px;min-width:0}
+.balance-panel-title{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:10px}
+.balance-panel-title h3{font-size:14px;font-weight:750;margin:0;color:var(--ink)}
+.balance-updating{font-size:10px;color:var(--muted);text-align:right}
+.balance-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.balance-stat{display:flex;flex-direction:column;gap:2px;border:1px solid #e8eee8;background:#fafbf8;border-radius:7px;padding:8px 10px}
+.balance-stat>span{font-size:10px;color:#77887d}
+.balance-stat>strong{font-size:20px;font-weight:750;line-height:1.2;color:#294b3e;font-variant-numeric:tabular-nums}
+.balance-stat small{font-size:10px;font-weight:500;margin-left:3px;color:#7b8a80}
+.balance-legend{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin:13px 0 10px;font-size:11px;color:#66766b}
+.balance-legend span{display:inline-flex;align-items:center;gap:5px}
+.balance-key{display:inline-block;width:10px;height:10px;border-radius:2px}
+.balance-key.standard,.balance-segment.standard{background:#318775}
+.balance-key.advanced,.balance-segment.advanced{background:#d4a064}
+.balance-segment.other{background:#9eaba3}
+.balance-chart{display:grid;gap:11px;margin-bottom:3px}
+.balance-row{min-width:0}
+.balance-row-heading{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:11px;line-height:1.4}
+.balance-row-heading strong{min-width:0;font-weight:630;overflow-wrap:anywhere}
+.balance-row-heading span{white-space:nowrap;flex-shrink:0;font-weight:680;color:#456a59;font-variant-numeric:tabular-nums}
+.balance-track{display:flex;align-items:stretch;height:12px;margin:5px 0 4px;border-radius:3px;overflow:hidden;background:#edf0eb}
+.balance-segment{display:block;height:100%;flex-shrink:0}
+.balance-row-numbers{color:#89958b;font-size:10px;line-height:1.4;font-variant-numeric:tabular-nums}
+.balance-empty{border:1px dashed #d8e1d9;padding:20px 12px;border-radius:8px;background:#fafbf9;text-align:center;font-size:11px;color:#89978d;line-height:1.6}
+@media(max-width:400px){.balance-stats{gap:5px}.balance-stat{padding:7px 8px}}
+
 /* Select multiple grammar topics without changing the test's selected problems. */
 .topic-filter{min-width:0}
 .topic-filter-label{display:block;font-size:11px;color:#75837b;font-weight:650}
