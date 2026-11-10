@@ -8,6 +8,43 @@
 @media(max-width:780px){.topbar{height:75px;padding:0 17px}.logo{min-width:unset}.logo-icon{width:36px;height:36px}.logo-name{font-size:15px}.steps{display:none}.hero{padding:27px 18px 22px}.hero-meta{display:none}.workspace,.preview-layout{grid-template-columns:1fr;padding:0 18px 30px}.builder{position:static;max-height:none}.preview-side{grid-row:1}.filters{padding:13px}.paper-wrap{padding:10px}.paper{padding:25px 20px;min-height:700px}.export-buttons{width:100%}.footer{padding:15px 18px}.footer span:last-child{display:none}}
 @media(max-width:450px){.filters{grid-template-columns:1fr}.privacy-chip{font-size:10px;padding:5px 9px}.small-actions{gap:8px}.q-card{padding:14px}.paper{padding:15px;font-size:12px}.paper-group-header{gap:6px}.paper-group-header span{font-size:10px}.modal-inner{padding:19px 17px}}
 
+
+/* Select multiple grammar topics without changing the test's selected problems. */
+.topic-filter{min-width:0}
+.topic-filter-label{display:block;font-size:11px;color:#75837b;font-weight:650}
+.topic-picker{position:relative;margin-top:5px;min-width:0}
+.topic-picker>summary{
+  list-style:none;display:flex;align-items:center;justify-content:space-between;gap:8px;
+  width:100%;min-height:42px;cursor:pointer;padding:10px 11px;
+  border:1px solid #dfe4dc;border-radius:7px;background:#fff;color:var(--ink);
+  font-size:13px;font-weight:400;
+}
+.topic-picker>summary::-webkit-details-marker{display:none}
+.topic-picker>summary #topicFilterValue{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.topic-picker-chevron{flex-shrink:0;font-size:12px;color:#71847b;transition:transform .15s}
+.topic-picker[open] .topic-picker-chevron{transform:rotate(180deg)}
+.topic-picker[open]>summary{border-color:#73a493;outline:2px solid #e2f0e8;outline-offset:0}
+.topic-picker>summary:focus-visible{outline:3px solid #9ac5ad;outline-offset:2px}
+.topic-picker-menu{
+  position:absolute;z-index:20;top:calc(100% + 5px);left:0;
+  width:max(100%,245px);max-width:min(90vw,340px);
+  background:#fff;border:1px solid var(--line);border-radius:9px;
+  box-shadow:0 14px 40px rgba(30,53,42,.18);padding:8px;
+}
+.topic-clear{width:100%;padding:7px 9px;text-align:left;font-size:12px;font-weight:650;color:var(--forest);background:#f4f8f4;border:0;border-radius:5px}
+.topic-clear:disabled{opacity:.45;cursor:default}
+.topic-options{max-height:270px;overflow:auto;padding:5px 0;overscroll-behavior:contain}
+.topic-option{
+  display:flex;align-items:center;gap:9px;margin:0;padding:8px 9px;
+  cursor:pointer;color:var(--ink);font-size:12px;font-weight:450;line-height:1.4;
+  border-radius:5px;
+}
+.topic-option:hover,.topic-option:focus-within{background:#eef5ef}
+.topic-option input[type="checkbox"]{width:15px;height:15px;flex-shrink:0;accent-color:var(--forest);cursor:pointer}
+.topic-option span{min-width:0;overflow-wrap:anywhere}
+.topic-no-options{padding:9px;color:var(--muted);font-size:12px}
+@media(max-width:780px){.topic-picker-menu{width:100%;max-width:none}}
+
 /* Full-width document pane beside the question picker. No preview-in-a-widget. */
 #chooseView .workspace{
   grid-template-columns:minmax(0,1fr) minmax(0,1fr);

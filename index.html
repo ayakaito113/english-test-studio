@@ -39,7 +39,18 @@
             </details>
           </section>
           <div class="filters">
-            <label>文法項目<select id="topicFilter"><option value="">すべて</option></select></label>
+            <div class="topic-filter">
+              <div class="topic-filter-label" id="topicFilterLabel">文法項目（複数選択可）</div>
+              <details id="topicPicker" class="topic-picker">
+                <summary aria-labelledby="topicFilterLabel topicFilterValue">
+                  <span id="topicFilterValue">すべての文法項目</span><span class="topic-picker-chevron" aria-hidden="true">▾</span>
+                </summary>
+                <div class="topic-picker-menu">
+                  <button id="clearTopics" type="button" class="topic-clear">すべての文法を表示</button>
+                  <div id="topicOptions" class="topic-options" role="group" aria-label="文法項目"></div>
+                </div>
+              </details>
+            </div>
             <label>難易度<select id="levelFilter"><option value="">すべて</option></select></label>
             <label>問題形式<select id="typeFilter"><option value="">すべて</option></select></label>
             <label class="filter-search">キーワード<input id="searchInput" type="search" placeholder="英文・日本文・出典で検索"></label>

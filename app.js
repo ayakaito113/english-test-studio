@@ -9,6 +9,7 @@ const short = (s,n=92) => String(s||'').replace(/\s+/g,' ').slice(0,n);
 const idGen = () => `manual-${new Date().toISOString().replace(/[-:.TZ]/g,'')}-${Math.random().toString(36).slice(2,8)}`;
 const blankDraft = {title:'英語 確認テスト', paper:'Letter',space:'standard',answerArea:'with',explain:false,showSources:true,selectedIds:[]};
 const state = {questions:[], selectedIds:[],displayLimit:60,step:'choose', documentType:'questions',...blankDraft};
+const selectedTopics = new Set(); // Empty = show all grammar topics. Does not alter the selected test questions.
 let db;
 let toastTimer;
 function notice(msg){$('toast').textContent=msg;$('toast').classList.remove('hidden');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').classList.add('hidden'),3800);}
@@ -27,8 +28,20 @@ function normalize(raw,i=0){
 function parseImport(raw){const data=JSON.parse(raw);if(data?.schemaVersion!==1)throw new Error('対応していないデータ形式です（schemaVersion: 1 が必要）。');if(Array.isArray(data.questions))return {questions:data.questions.map(normalize),draft:data.draft||null};if(data.kind==='english-test-studio-test'&&Array.isArray(data.selectedIds))return {questions:[],draft:data};throw new Error('questions 配列が見つかりません。');}
 function unique(arr){return [...new Set(arr.filter(Boolean))];}
 function fillOptions(id,values){const el=$(id),prev=el.value;el.innerHTML='<option value="">すべて</option>'+unique(values).sort((a,b)=>a.localeCompare(b,'ja')).map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('');if([...el.options].some(o=>o.value===prev))el.value=prev;}
-function refreshOptions(){fillOptions('topicFilter',state.questions.map(q=>q.topic));fillOptions('levelFilter',state.questions.map(q=>q.level));fillOptions('typeFilter',state.questions.map(q=>q.type));}
-function filtered(){const topic=$('topicFilter').value,level=$('levelFilter').value,type=$('typeFilter').value,query=$('searchInput').value.trim().toLowerCase();return state.questions.filter(q=>(!topic||q.topic===topic)&&(!level||q.level===level)&&(!type||q.type===type)&&(!query||[q.text,q.choices,q.source,q.topic,q.type].join(' ').toLowerCase().includes(query)));}
+function updateTopicSummary(){
+ const selected=[...selectedTopics].sort((a,b)=>a.localeCompare(b,'ja'));
+ $('topicFilterValue').textContent=selected.length===0?'すべての文法項目':selected.length<=2?selected.join('・'):`${selected.length}項目を選択中`;
+ $('clearTopics').disabled=selected.length===0;
+}
+function refreshTopicOptions(){
+ const values=unique(state.questions.map(q=>q.topic)).sort((a,b)=>a.localeCompare(b,'ja'));
+ const valid=new Set(values);
+ for(const item of selectedTopics)if(!valid.has(item))selectedTopics.delete(item);
+ $('topicOptions').innerHTML=values.map(topic=>`<label class="topic-option"><input type="checkbox" value="${esc(topic)}" ${selectedTopics.has(topic)?'checked':''}><span>${esc(topic)}</span></label>`).join('')||'<p class="topic-no-options">文法データがありません</p>';
+ updateTopicSummary();
+}
+function refreshOptions(){refreshTopicOptions();fillOptions('levelFilter',state.questions.map(q=>q.level));fillOptions('typeFilter',state.questions.map(q=>q.type));}
+function filtered(){const level=$('levelFilter').value,type=$('typeFilter').value,query=$('searchInput').value.trim().toLowerCase();return state.questions.filter(q=>(selectedTopics.size===0||selectedTopics.has(q.topic))&&(!level||q.level===level)&&(!type||q.type===type)&&(!query||[q.text,q.choices,q.source,q.topic,q.type].join(' ').toLowerCase().includes(query)));}
 function updateCounters(){const n=state.questions.length;$('bankCountTop').textContent=`問題データ ${n}問`;$('dataCount').textContent=n;$('selectedCount').textContent=`${state.selectedIds.length}問`;$('selectedCount2').textContent=`${state.selectedIds.length}問`;$('heroTopics').innerHTML=n?`${unique(state.questions.map(q=>q.topic)).length}文法項目<br>標準・発展の問題バンク`:'問題データを読み込んで開始';$('previewTopics').textContent=`${state.selectedIds.length}問／${groups().length}大問`;}
 function refreshList(){const arr=filtered();$('visibleCount').textContent=`${arr.length}問`;$('resultInfo').textContent=`${state.questions.length}問から ${arr.length}問を表示`;
  if(!state.questions.length){$('questionList').innerHTML=`<div class="empty"><strong>問題バンクはまだ空です</strong><div>まず手元にある非公開JSONファイルを読み込もう。<br>読み込んだ問題はこのブラウザ内だけに保存されます。</div><button type="button" class="primary" data-action="import">JSONファイルを読み込む</button></div>`;return;}
@@ -139,8 +152,14 @@ function currentDraft(){return {title:state.title,paper:state.paper,space:state.
 function openEditor(id){const form=$('questionForm');form.reset();const q=state.questions.find(q=>q.id===id);$('editorHeading').textContent=q?'問題を編集する':'問題を登録する';for(const field of ['id','topic','level','type','instruction','text','choices','answer','source','explanation']){const el=form.elements.namedItem(field);if(el)el.value=q?.[field]||'';}$('editDialog').showModal();}
 function refreshAll(){refreshOptions();refreshList();renderSelection();updateCounters();renderLivePreview();if(state.step==='preview')renderPreview();}
 function bind(){
- ['topicFilter','levelFilter','typeFilter','searchInput'].forEach(id=>$(id).addEventListener('input',()=>{state.displayLimit=60;refreshList();}));
- $('resetFilters').addEventListener('click',()=>{for(const id of ['topicFilter','levelFilter','typeFilter','searchInput'])$(id).value='';state.displayLimit=60;refreshList();});
+ ['levelFilter','typeFilter','searchInput'].forEach(id=>$(id).addEventListener('input',()=>{state.displayLimit=60;refreshList();}));
+ $('topicOptions').addEventListener('change',ev=>{
+   if(!ev.target.matches('input[type="checkbox"]'))return;
+   if(ev.target.checked)selectedTopics.add(ev.target.value);else selectedTopics.delete(ev.target.value);
+   updateTopicSummary();state.displayLimit=60;refreshList();
+ });
+ $('clearTopics').addEventListener('click',()=>{selectedTopics.clear();refreshTopicOptions();state.displayLimit=60;refreshList();});
+ $('resetFilters').addEventListener('click',()=>{for(const id of ['levelFilter','typeFilter','searchInput'])$(id).value='';selectedTopics.clear();refreshTopicOptions();state.displayLimit=60;refreshList();});
  document.addEventListener('click',ev=>{const t=ev.target.closest('[data-action]');if(!t)return;actionClick(t.dataset.action,t.dataset.id);});
  document.querySelectorAll('[data-step]').forEach(btn=>btn.addEventListener('click',()=>{if(btn.dataset.step==='preview'&&!selected().length){notice('先に問題を選んでください');return;}showStep(btn.dataset.step);}));
  ['shuffleWithinType','shuffleWithinType2'].forEach(id=>$(id).addEventListener('click',shuffleSelectedWithinTypes));
