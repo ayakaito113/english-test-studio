@@ -3,7 +3,7 @@
  * ZIP entries are stored (uncompressed) for maximal browser compatibility.
  */
 import {parseInstruction, formatQuestionText} from './formatting.js';
-import {siriusSourceLabel} from './source.js';
+import {sourceLabel} from './source.js';
 const encoder = new TextEncoder();
 const xml = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;');
 const byType = (questions) => {
@@ -39,7 +39,7 @@ function contentXml({questions,title='英語 確認テスト',documentType='ques
   groups.forEach((group,gi)=>{
     parts.push(paragraph(run(`【${gi+1}】 `,{bold:true,size:22})+run(group.instruction || `次の問題に答えなさい。`, {bold:true,size:18}),{before:180,after:185,keepNext:true}));
     group.items.forEach((q,qi)=>{
-      const sourceText=showSources && String(q.source||'').trim()?`出典：${siriusSourceLabel(q.source)}`:'';
+      const sourceText=showSources && String(q.source||'').trim()?`出典：${sourceLabel(q)}`:'';
       const heading=parseInstruction(q.instruction).heading;
       const condition=(heading && heading!==group.instruction) ? `（個別の指示：${heading}）\n`:'';
       const text = documentType==='questions' ? formatQuestionText(q) : (String(q.answer||'').trim()?q.answer:'［解答未登録］');
